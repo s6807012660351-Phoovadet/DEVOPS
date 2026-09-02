@@ -1,5 +1,6 @@
 const products = require('../data/product');
 
+// GET /products or GET /api/products
 exports.getAllProducts = (req, res) => {
     res.status(200).json({
         success: true,
@@ -8,16 +9,17 @@ exports.getAllProducts = (req, res) => {
     });
 };
 
+// GET /products/:id or GET /api/products/:id
 exports.getProductById = (req, res) => {
     const id = parseInt(req.params.id);
     const product = products.find(p => p.id === id);
 
-    if(!product) {
+    if (!product) {
         return res.status(404).json({
             success: false,
-            message: 'Product not found'
+            error: 'Product not found'
         });
-    }   
+    }
 
     res.status(200).json({
         success: true,
@@ -25,25 +27,31 @@ exports.getProductById = (req, res) => {
     });
 };
 
+// POST /products or POST /api/products
 exports.createProduct = (req, res) => {
-    const { name, description, price, image, category, stock } = req.body;
+    const {
+        id, name, price, description, category, stock, image
+    } = req.body;
 
     if (!name || price === undefined) {
         return res.status(400).json({
             success: false,
-            message: 'Please provide name and price'
+            error: 'name and price are required'
         });
     }
 
-    const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+    // Auto-generate ID if not specified in body
+    const newId = id !== undefined 
+        ? parseInt(id) 
+        : (products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1);
 
     const newProduct = {
         id: newId,
         name,
-        description: description || '',
         price: Number(price),
-        image: image || '',
+        description: description || '',
         category: category || '',
+        image: image || '',
         stock: stock !== undefined ? Number(stock) : 0
     };
 
@@ -55,32 +63,32 @@ exports.createProduct = (req, res) => {
     });
 };
 
+// PUT /products/:id or PUT /api/products/:id
 exports.updateProduct = (req, res) => {
     const id = parseInt(req.params.id);
-    const index = products.findIndex(p => p.id === id);
+    const product = products.find(p => p.id === id);
 
-    if (index === -1) {
+    if (!product) {
         return res.status(404).json({
             success: false,
-            message: 'Product not found'
+            error: 'No product found'
         });
     }
 
-    const { name, description, price, image, category, stock } = req.body;
-
-    if (name !== undefined) products[index].name = name;
-    if (description !== undefined) products[index].description = description;
-    if (price !== undefined) products[index].price = Number(price);
-    if (image !== undefined) products[index].image = image;
-    if (category !== undefined) products[index].category = category;
-    if (stock !== undefined) products[index].stock = Number(stock);
+    if (req.body.name !== undefined) product.name = req.body.name;
+    if (req.body.price !== undefined) product.price = Number(req.body.price);
+    if (req.body.description !== undefined) product.description = req.body.description;
+    if (req.body.category !== undefined) product.category = req.body.category;
+    if (req.body.image !== undefined) product.image = req.body.image;
+    if (req.body.stock !== undefined) product.stock = Number(req.body.stock);
 
     res.status(200).json({
         success: true,
-        data: products[index]
+        data: product
     });
 };
 
+// DELETE /products/:id or DELETE /api/products/:id
 exports.deleteProduct = (req, res) => {
     const id = parseInt(req.params.id);
     const index = products.findIndex(p => p.id === id);
@@ -88,15 +96,14 @@ exports.deleteProduct = (req, res) => {
     if (index === -1) {
         return res.status(404).json({
             success: false,
-            message: 'Product not found'
+            error: 'No product found'
         });
     }
 
-    const deletedProduct = products.splice(index, 1)[0];
+    const [deletedProduct] = products.splice(index, 1);
 
     res.status(200).json({
         success: true,
-        message: 'Product deleted successfully',
         data: deletedProduct
     });
 };
